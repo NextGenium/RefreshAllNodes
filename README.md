@@ -89,7 +89,7 @@ NextGenium-форк — clean fork upstream MIT плагина, без feature-�
 
 ## Maintainers
 
-- TBD. Открытый вопрос к Диме (в loader JSON Maintainers пустой).
+- TBD — студийный (мейнтейнер не закреплён; плагин — форк upstream).
 
 ## References
 
