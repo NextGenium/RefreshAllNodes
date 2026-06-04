@@ -1,63 +1,99 @@
 # Refresh All Nodes
 
-*Unreal Engine plugin that refreshes all blueprint nodes in every blueprint* 
+> **Upstream documentation — nachomonkey / RefreshAllNodes**
+>
+> Базовая архитектура (bulk Blueprint nodes refresh + optional compilation, toolbar button, Content Browser context menu, Project Settings конфиг) — в upstream от nachomonkey: **https://github.com/nachomonkey/RefreshAllNodes**. Pre-compiled releases: **https://github.com/nachomonkey/RefreshAllNodes/releases**.
+>
+> Этот README описывает плагин на high-level + **NextGenium-доработки** относительно upstream.
 
-**The latest RefreshAllNodes version only supports UE versions 5.1 and later.**
+## Overview
 
-For use with UE 5.0 and earlier, use the [RefreshAllNodes v1.4 release](https://github.com/nachomonkey/RefreshAllNodes/releases/tag/v1.4%2B1-UE5.0.3)
+Editor plugin для batch-refresh всех Blueprint nodes в проекте (опционально с компиляцией). Добавляет кнопку `Refresh All Blueprint Nodes` в Blueprints toolbar + `Refresh Blueprints` в Content Browser context menu (для refresh per-folder). Полезно при API breaking changes в C++ коде, которые ломают существующие Blueprint nodes.
 
+В Next Framework входит как `3rdParty, Tooling` плагин. Используется на этапе maintenance проекта при крупных C++ refactor'ах.
 
+## When to use
+
+- C++ refactor поменял node signatures, надо рефрешнуть все BP-консамеры разом.
+- Engine upgrade ломает BP nodes — bulk refresh без открытия каждого BP вручную.
+- Plugin update — refresh blueprints в конкретном плагине через `Additional Blueprint Paths`.
+- Содержимое `Content Browser` нужно полностью пересохранить после API change.
+
+## Boundary
+
+- **Что плагин делает** — вызывает built-in UE `Refresh All Nodes` для каждого BP в заданных путях, опционально компилирует.
+- **Что не делает** — не чинит broken nodes, не мигрирует deprecated functions, не делает diff / merge.
+- **Source Control** — может вызвать массовое resave всех BP; использовать осторожно (см. upstream warning).
+
+## NextGenium-доработки (поверх upstream)
+
+| PR | Что добавлено |
+|---|---|
+| — | NextGenium-доработок поверх upstream на момент написания не зафиксировано. Repo — clean fork upstream `nachomonkey/RefreshAllNodes` (MIT). |
+
+## Modules
+
+| Модуль | Тип | LoadingPhase | Назначение |
+|---|---|---|---|
+| `RefreshAllNodes` | Editor | `PostEngineInit` | Toolbar button + Content Browser action + Project Settings config. |
+
+**Plugin dependencies:** `Engine`, `CoreUObject` (AdditionalDependencies).
+**Platform:** не ограничено в .uplugin (но pre-compiled releases — Windows 10 64-bit).
+**Version:** 1.5.
 
 ## Installation
 
-### Pre-compiled
+Через Next Framework Loader: **Refresh All Nodes**.
 
-*The pre-compiled releases of this plugin are compiled running Windows 10 (64-bit).*
+Или вручную:
 
-* Download a release that matches your version of Unreal Engine [from here](https://github.com/nachomonkey/RefreshAllNodes/releases), and extract it into your project's Plugins directory.
+```bash
+cd <YourProject>/Plugins
+git clone https://github.com/NextGenium/RefreshAllNodes.git
+```
 
-* Relaunch the editor.
+Pre-compiled releases (для UE 5.1+) — `https://github.com/nachomonkey/RefreshAllNodes/releases`. Для UE 5.0 и старее — release v1.4 (`v1.4+1-UE5.0.3`).
 
-### Compiling from source
+## How to use
 
-* Clone or download the repository into your project's `Plugins` directory and relaunch the editor.
+1. Включить `RefreshAllNodes` плагин в проекте.
+2. Открыть любой Blueprint → нажать кнопку **`Refresh All Blueprint Nodes`** в toolbar.
+3. Или в Content Browser → правый клик по папке → **`Refresh Blueprints`** (refresh per-folder).
+4. Опции в **Project Settings → Plugins → Refresh All Nodes**:
+   - `Compile Blueprints` — компилировать после refresh (slower, но ловит ошибки).
+   - `Refresh Level Blueprints` — рефрешить level BP (открывает уровни, потребляет память).
+   - `Refresh Game Blueprints` — refresh BP в `Content/`.
+   - `Refresh Engine Blueprints` — refresh BP в `Engine/Content/` (осторожно).
+   - `Additional Blueprint Paths` — массив дополнительных путей (имена плагинов).
+   - `Exclude Blueprint Paths` — исключаемые пути.
 
-* A message should appear asking to compile the plugin.
+Полная upstream usage — см. https://github.com/nachomonkey/RefreshAllNodes#usage.
 
-## Usage
+## TODO
 
-This plugin adds the **`Refresh All Blueprint Nodes`** button to the Blueprints toolbar menu:
-
-![The button is shown in the Blueprints toolbar menu](docs/MenuButton.png)
-
-As stated, the button will search for your Blueprints, open, them, and excecute the built-in "Refresh all nodes" function. By default, all blueprints are then compiled.
-
-The **`Refresh Blueprints`** action can be found in the Content Browser's context menu to refresh blueprints in certain folders:
-
-![The button is shown in the Content Browser context menu](docs/ContextMenuButton.png)
-
-* *Note: Refreshing blueprint nodes may cause node breakages or change variable types, especially in certain circumstances following a `HotReload`.*
-* *Note: I have not used RefreshAllNodes with Source Control, so it may cause undesired behavior by resaving every blueprint.*
-
-
-### Configuration
-
-The plugin can be configured under **`Project Settings` ->  `Plugins` -> `Refresh All Nodes`**
-
-![Configuration](docs/Configuration.png)
-
-* Compile Blueprints: If checked, the plugin will compiled the blueprints after refreshing them. Enabling compilation will allow the plugin to catch  errors in the blueprints, but it will take more time to process.
-
-* Refresh Level Blueprints: If checked, the plugin will search for level blueprints. This will cause the corresponding levels to be opened and saved, which can consume extra memory.
-* Refresh Game Blueprints: If checked, the plugin will refresh blueprints found in the project's Content folder.
-* Refresh Engine Blueprints: If checked, the plugin will refresh blueprints found in the engine's Content folder.
-* Additional Blueprint Paths: Array of additional paths to search in. Most useful for plugins. Add the name of the plugin to refresh its blueprints.
-* Exclude Blueprint Paths: Array of paths to not refresh blueprints in. Useful for excluding blueprints that are expensive to load.
+- Carry-over from upstream: см. [issues nachomonkey/RefreshAllNodes](https://github.com/nachomonkey/RefreshAllNodes/issues).
+- NextGenium-specific: TBD — добавится по мере использования.
 
 ## Limitations
 
-This plugin's ability to refresh nodes is limited to Unreal Engine's built-in "Refresh All Nodes" function. The purpose of this plugin is only to provide an easy way to perform such action on Blueprint assets. This plugin is not responsible for any damage to Blueprints or any data loss.
+- Refresh limited by UE built-in `Refresh All Nodes` функцией — плагин не делает больше, чем сам UE.
+- Refresh может сломать nodes / изменить variable types (особенно после HotReload).
+- Source Control — может trigger'нуть resave всех BP; использовать вне горячих веток.
+- Не несёт ответственности за data loss / damage к BP (см. upstream Limitations).
 
-# License
+## Origin
 
-RefreshAllNodes is free software, licensed under the MIT License as contained in the [LICENSE](LICENSE) file.
+Upstream — **`nachomonkey/RefreshAllNodes`** (https://github.com/nachomonkey/RefreshAllNodes), **MIT License**, author **NachoMonkey** (https://github.com/nachomonkey), version **1.5**.
+
+NextGenium-форк — clean fork upstream MIT плагина, без feature-патчей.
+
+## Maintainers
+
+- TBD — студийный (мейнтейнер не закреплён; плагин — форк upstream).
+
+## References
+
+- **Upstream repo:** https://github.com/nachomonkey/RefreshAllNodes
+- **Pre-compiled releases:** https://github.com/nachomonkey/RefreshAllNodes/releases
+- **MIT License:** [LICENSE](./LICENSE)
+- **Upstream usage docs:** https://github.com/nachomonkey/RefreshAllNodes#usage
